@@ -1,8 +1,10 @@
 package salty64
 
 import (
+	"crypto/sha256"
 	b64 "encoding/base64"
 	"errors"
+	"fmt"
 )
 
 var (
@@ -12,6 +14,17 @@ var (
 	// ErrOffsetInvalid denotes an offset was provided that was greater
 	// than the length of the salt
 	ErrOffsetInvalid = errors.New("Offset is negative")
+
+	// ErrUnsupportedMethod denotes the encryption method is not currently supported
+	ErrUnsupportedMethod = errors.New("Unsupported encryption method")
+)
+
+// EncryptMethod used to denote supported encryption methods
+type EncryptMethod string
+
+const (
+	// SHA256 encryption method
+	SHA256 EncryptMethod = "sha256"
 )
 
 // Shaker is used to salt the string and then only use a fragment of it
@@ -61,6 +74,23 @@ func (salt Shaker) Decode(s string) (string, error) {
 	}
 
 	return string(dec), nil
+}
+
+// MethodEncode encode a string with the specified method
+func (salt Shaker) MethodEncode(m EncryptMethod, s string) (string, error) {
+	switch m {
+	case SHA256:
+		sum := sha256.Sum256([]byte(s))
+		ssum := sha256.Sum256([]byte(salt.Salt))
+		cornedbeef := make([]byte, 0)
+		for i, b := range sum {
+			cornedbeef = append(cornedbeef, b+ssum[i])
+		}
+		hk := fmt.Sprintf("%x", cornedbeef)
+		return hk, nil
+	default:
+		return "", ErrUnsupportedMethod
+	}
 }
 
 func validate(s Shaker) error {

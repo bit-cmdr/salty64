@@ -77,6 +77,31 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestMethodEncode_SHA256(t *testing.T) {
+	s, err := NewShaker("test", 1)
+	if err != nil {
+		t.Fatalf("NewShaker returned error: %s\n", err)
+	}
+
+	h1, err := s.MethodEncode(SHA256, "hello world")
+	if err != nil {
+		t.Fatalf("Encode returned error: %s\n", err)
+	}
+
+	h2, err := s.MethodEncode(SHA256, "hello world")
+	if err != nil {
+		t.Fatalf("Encode returned error: %s\n", err)
+	}
+
+	if len(h1) <= 0 {
+		t.Fatalf("Failed to encode")
+	}
+
+	if h1 != h2 {
+		t.Fatalf("Mismatched encodings on same string")
+	}
+}
+
 func BenchmarkEncode(b *testing.B) {
 	s, err := NewShaker("test", 1)
 	if err != nil {
@@ -105,6 +130,20 @@ func BenchmarkDecode(b *testing.B) {
 		_, err = s.Decode(enc)
 		if err != nil {
 			b.Fatalf("Decode returned error: %s\n", err)
+		}
+	}
+}
+
+func BenchmarkMethodEncode(b *testing.B) {
+	s, err := NewShaker("test", 1)
+	if err != nil {
+		b.Fatalf("NewShaker returned error: %s\n", err)
+	}
+
+	for n := 0; n < b.N; n++ {
+		_, err := s.MethodEncode(SHA256, "test run @ "+strconv.Itoa(n))
+		if err != nil {
+			b.Fatalf("Encode returned error: %s\n", err)
 		}
 	}
 }
